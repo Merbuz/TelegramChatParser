@@ -3,8 +3,8 @@ import logging
 from pyrogram.enums.parse_mode import ParseMode
 
 from app.bot.bot import Bot
-from app.bot.handlers.message_handler import message_router
 from app.bot.handlers.command_handler import command_router
+from app.bot.handlers.message_handler import message_router
 
 
 bot = Bot(
