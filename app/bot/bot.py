@@ -1,26 +1,31 @@
 from __future__ import annotations
 
-import logging
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Any
+)
 
-import aiosqlite
+from pyrogram_patch import patch
 from pyrogram.client import Client
 
 if TYPE_CHECKING:
-    from app.bot.router import Router
+    from pyrogram_patch.router import Router
+    from pyrogram_patch.fsm.base_storage import BaseStorage
 
 
 class Bot(Client):
+    def include_middleware(self, middleware: Any) -> None:
+        patch(self).include_middleware(middleware)
+
+    def include_outer_middleware(self, middleware: Any) -> None:
+        patch(self).include_outer_middleware(middleware)
+
+    def set_storage(self, storage: BaseStorage) -> None:
+        patch(self).set_storage(storage)
+
     def include_router(self, router: Router) -> None:
-        """Connects the handlers of the specified router"""
-
-        logging.info(f"Including Router - {router.name}")
-
-        for handler in router.handlers:
-            self.add_handler(handler)
+        patch(self).include_router(router)
 
     def include_routers(self, *routers: Router) -> None:
-        """Connects the handlers of the specified routers"""
-
         for router in routers:
             self.include_router(router)

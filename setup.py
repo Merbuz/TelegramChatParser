@@ -8,7 +8,7 @@ from app.bot.handlers.message_handler import message_router
 
 
 bot = Bot(
-    "app/bot/bot",
+    "app/bot/bot/session",
     parse_mode=ParseMode.MARKDOWN
 )
 
