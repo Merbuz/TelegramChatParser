@@ -1,21 +1,20 @@
 import logging
 
 from pyrogram.enums.parse_mode import ParseMode
+from pyrogram_patch.fsm.storages import MemoryStorage
 
 from app.bot.bot import Bot
 from app.bot.handlers.command_handler import command_router
 from app.bot.handlers.message_handler import message_router
 
 
-bot = Bot(
-    "app/bot/bot/session",
+bot = Bot.from_env(
+    name="app/bot/session/bot",
     parse_mode=ParseMode.MARKDOWN
 )
 
 
 def setup():
-    # | Setting up logging
-
     logger = logging.getLogger()
 
     logger.setLevel(logging.INFO)
@@ -33,7 +32,7 @@ def setup():
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
-    # | Include routers
+    bot.set_storage(MemoryStorage())
 
     bot.include_routers(
         command_router,
