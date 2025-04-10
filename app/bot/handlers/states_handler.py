@@ -1,19 +1,59 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    List
+)
 
-from pyrogram.filters import command
+from pyrogram import filters
 from pyrogram_patch.router import Router
+from pyrogram_patch.fsm import State
 from pyrogram_patch.fsm.filter import StateFilter
+
+from app.bot.states.group import ActionStates
+from app.bot.markups.inline_markups import InlineKeyboardMenus
+from app.bot.markups.text import TEXT
+from app.db.db_requests import DB
+from app.db.models import (
+    Keywords, Keyword,
+    PublicChats, PublicChat,
+    PrivateChats, PrivateChat
+)
 
 if TYPE_CHECKING:
     from pyrogram.client import Client
     from pyrogram.types.messages_and_media import Message
 
 
-command_router = Router()
+states_router = Router()
 
 
-@command_router.on_message(StateFilter())
-async def example(client: Client, message: Message):
-    await message.reply(text="**📄 Меню управления парсером**")
+@states_router.on_message(
+    StateFilter(ActionStates.add_keyword)  # type: ignore
+)
+async def add_keyword(client: Client, message: Message, state: State):
+    if len(message.text) <= 50:
+        await DB.add(
+            table_cls=Keywords,
+            sql_args=[
+                "word",
+                "owner_id"
+            ],
+            sql_values=[
+                message.text,
+                message.from_user.id
+            ]
+        )
+
+        await message.reply(
+            text=TEXT["keyword_added"],
+            reply_markup=await InlineKeyboardMenus.back("manage_keywords")
+        )
+
+        await state.finish()
+
+    else:
+        await message.reply(
+            text=TEXT["add_keyword"],
+            reply_markup=await InlineKeyboardMenus.back("manage_keywords")
+        )

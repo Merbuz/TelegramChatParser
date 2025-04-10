@@ -1,28 +1,15 @@
 import configparser
-from typing import (
-    List,
-    Any
-)
+from typing import List
 
 
 class Singleton:
-    def __init__(self, cls: Any):
-        self.wrapped = cls
-        self._instance = None
-
-    def __call__(self, *args, **kwargs):
-        if self._instance is None:
-            self._instance = self.wrapped(*args, **kwargs)
-
-        return self._instance
+    def __new__(cls):
+        if not hasattr(cls, "instance"):
+            cls.instance = super(Singleton, cls).__new__(cls)
+        return cls.instance
 
 
-def singleton(cls):
-    return Singleton(cls)
-
-
-@singleton
-class Settings:
+class Settings(Singleton):
     def __init__(self):
         self.parser = configparser.ConfigParser()
 
@@ -37,4 +24,4 @@ class Settings:
 
     @property
     def view_logs(self) -> bool:
-        return self.parser.getboolean("Bot", "view.logs")
+        return self.parser.getboolean("Bot", "view_logs")

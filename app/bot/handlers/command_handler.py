@@ -6,6 +6,7 @@ from pyrogram.filters import command
 from pyrogram_patch.router import Router
 
 from app.bot.markups.inline_markups import InlineKeyboardMenus
+from app.bot.markups.text import TEXT
 
 if TYPE_CHECKING:
     from pyrogram.client import Client
@@ -18,7 +19,6 @@ command_router = Router()
 @command_router.on_message(command("start"))
 async def start(client: Client, message: Message):
     await message.reply(
-        text="**📄 Добро пожаловать в меню управления парсером!\n\n"
-        "Выберите действие**",
-        reply_markup=InlineKeyboardMenus.start()
+        text=TEXT["start"],
+        reply_markup=await InlineKeyboardMenus.start()
     )
