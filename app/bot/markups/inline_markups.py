@@ -1,22 +1,27 @@
+import os
 import math
 from typing import (
     Optional,
     List
 )
+from pathlib import Path
 
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from app.db.db_requests import DB
 from app.db.models import (
     Keywords, Keyword,
-    PublicChats, PublicChat,
-    PrivateChats, PrivateChat
+    Chats, Chat
 )
 from app.bot.markups.text import BUTTON
 from app.bot.callback_query.callback_data import (
     KeywordData,
     KeywordParse,
-    KeywordRemove
+    KeywordRemove,
+    ChatData,
+    ChatRemove,
+    SessionData,
+    SessionRemove
 )
 
 
@@ -64,6 +69,10 @@ class InlineKeyboardMenus:
             InlineKeyboardButton(
                 text=BUTTON["manage_sessions"],
                 callback_data="manage_sessions"
+            ),
+            InlineKeyboardButton(
+                text=BUTTON["manage_parser"],
+                callback_data="manage_parser"
             )
         )
 
@@ -125,7 +134,7 @@ class InlineKeyboardMenus:
         if keyword:
             return InlineKeyboardMenus._inline_keyboard_builder(
                 InlineKeyboardButton(
-                    text=BUTTON["need_to_parse"] + BUTTON["yes" if keyword.enabled else "no"],  # noqa: E501
+                    text=BUTTON["need_to_parse"].format("yes" if keyword.enabled else "no"),  # noqa: E501
                     callback_data=KeywordParse(
                         word=word
                     ).pack()
@@ -146,84 +155,97 @@ class InlineKeyboardMenus:
     async def manage_links() -> InlineKeyboardMarkup:
         return InlineKeyboardMenus._inline_keyboard_builder(
             InlineKeyboardButton(
-                text=BUTTON["public_links"],
-                callback_data="public_links"
+                text=BUTTON["add_link"],
+                callback_data="add_link"
             ),
             InlineKeyboardButton(
-                text=BUTTON["private_links"],
-                callback_data="private_links"
+                text=BUTTON["links_list"],
+                callback_data="links_list"
+            ),
+            InlineKeyboardMenus._back("start")
+        )
+
+    @staticmethod
+    async def links_list() -> InlineKeyboardMarkup:
+        inline_menu: List[InlineKeyboardButton] = []
+        links: Optional[List[Chat]] = await DB.get_many(
+            table_cls=Chats
+        )
+
+        if links:
+            for link in links:
+                inline_menu.append(
+                    InlineKeyboardButton(
+                        text=link.link,
+                        callback_data=ChatData(
+                            link=link.link
+                        ).pack()
+                    )
+                )
+
+        return InlineKeyboardMenus._inline_keyboard_builder(
+            *inline_menu,
+            InlineKeyboardMenus._back("manage_links")
+        )
+
+    @staticmethod
+    async def manage_link(link: str) -> InlineKeyboardMarkup:
+        return InlineKeyboardMenus._inline_keyboard_builder(
+            InlineKeyboardButton(
+                text=BUTTON["remove_link"],
+                callback_data=ChatRemove(
+                    link=link
+                ).pack()
             ),
             InlineKeyboardMenus._back(
-                data="start"
+                data="links_list"
             )
         )
 
     @staticmethod
-    async def manage_public_links() -> InlineKeyboardMarkup:
+    async def manage_sessions() -> InlineKeyboardMarkup:
         return InlineKeyboardMenus._inline_keyboard_builder(
             InlineKeyboardButton(
-                text=BUTTON["add_link"],
-                callback_data="add_public_link"
+                text=BUTTON["add_session"],
+                callback_data="add_session"
             ),
             InlineKeyboardButton(
-                text=BUTTON["links_list"],
-                callback_data="public_links_list"
+                text=BUTTON["sessions_list"],
+                callback_data="sessions_list"
             ),
-            InlineKeyboardMenus._back("manage_links")
+            InlineKeyboardMenus._back("start")
         )
 
     @staticmethod
-    async def manage_private_links() -> InlineKeyboardMarkup:
-        return InlineKeyboardMenus._inline_keyboard_builder(
-            InlineKeyboardButton(
-                text=BUTTON["add_link"],
-                callback_data="add_private_link"
-            ),
-            InlineKeyboardButton(
-                text=BUTTON["links_list"],
-                callback_data="private_links_list"
-            ),
-            InlineKeyboardMenus._back("manage_links")
-        )
-
-    @staticmethod
-    async def public_links_list() -> InlineKeyboardMarkup:
+    async def sessions_list() -> InlineKeyboardMarkup:
         inline_menu: List[InlineKeyboardButton] = []
-        links: Optional[List[PublicChat]] = await DB.get_many(
-            table_cls=PublicChats
-        )
+        path = Path("./sessions")
 
-        if links:
-            for link in links:
-                inline_menu.append(
-                    InlineKeyboardButton(
-                        text=link.link,
-                        callback_data=str(link.id)
-                    )
+        for file in path.glob("*.session"):
+            inline_menu.append(
+                InlineKeyboardButton(
+                    text=file.name,
+                    callback_data=SessionData(
+                        name=file.name
+                    ).pack()
                 )
+            )
 
         return InlineKeyboardMenus._inline_keyboard_builder(
             *inline_menu,
-            InlineKeyboardMenus._back("public_links")
+            InlineKeyboardMenus._back("manage_sessions")
         )
 
     @staticmethod
-    async def private_links_list() -> InlineKeyboardMarkup:
-        inline_menu: List[InlineKeyboardButton] = []
-        links: Optional[List[PrivateChat]] = await DB.get_many(
-            table_cls=PrivateChats
-        )
-
-        if links:
-            for link in links:
-                inline_menu.append(
-                    InlineKeyboardButton(
-                        text=link.link,
-                        callback_data=str(link.id)
-                    )
-                )
-
+    async def manage_session(name: str) -> InlineKeyboardMarkup:
         return InlineKeyboardMenus._inline_keyboard_builder(
-            *inline_menu,
-            InlineKeyboardMenus._back("private_links")
+            InlineKeyboardButton(
+                text=BUTTON["remove_session"],
+                callback_data=SessionRemove(
+                    name=name
+                ).pack()
+            ),
+            InlineKeyboardMenus._back(
+                data="links_list"
+            )
         )

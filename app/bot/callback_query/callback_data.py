@@ -13,25 +13,17 @@ class KeywordRemove(CallbackData, prefix="kw_remove"):
     word: str
 
 
-class PublicChatData(CallbackData, prefix="public_chat"):
-    id: int
+class ChatData(CallbackData, prefix="chat"):
+    link: str
 
 
-class PublicChatParse(CallbackData, prefix="pubc_parse"):
-    id: int
+class ChatRemove(CallbackData, prefix="ct_remove"):
+    link: str
 
 
-class PublicChatRemove(CallbackData, prefix="pubc_remove"):
-    id: int
+class SessionData(CallbackData, prefix="session"):
+    name: str
 
 
-class PrivateChatData(CallbackData, prefix="private_chat"):
-    id: int
-
-
-class PrivateChatParse(CallbackData, prefix="prc_parse"):
-    id: int
-
-
-class PrivateChatRemove(CallbackData, prefix="prc_remove"):
-    id: int
+class SessionRemove(CallbackData, prefix="sn_remove"):
+    name: str

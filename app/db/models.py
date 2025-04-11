@@ -16,24 +16,10 @@ class Keywords:
 
 
 @define
-class PublicChat:
-    id: int
+class Chat:
     link: str
-    status: str
 
 
 @define
-class PublicChats:
-    rows: List[PublicChat]
-
-
-@define
-class PrivateChat:
-    id: int
-    link: str
-    status: str
-
-
-@define
-class PrivateChats:
-    rows: List[PrivateChat]
+class Chats:
+    rows: List[Chat]

@@ -4,6 +4,7 @@ from typing import (
     TYPE_CHECKING,
     Optional
 )
+from pathlib import Path
 
 from pyrogram_patch.router import Router
 from pyrogram_patch.fsm import State
@@ -15,13 +16,15 @@ from app.bot.markups.text import TEXT
 from app.db.db_requests import DB
 from app.db.models import (
     Keywords, Keyword,
-    PublicChats, PublicChat,
-    PrivateChats, PrivateChat
+    Chats, Chat
 )
 from app.bot.callback_query.callback_data import (
     KeywordData,
     KeywordParse,
-    KeywordRemove
+    KeywordRemove,
+    ChatData,
+    ChatRemove,
+    SessionData
 )
 
 if TYPE_CHECKING:
@@ -162,48 +165,114 @@ async def remove_keyword(client: Client, query: CallbackQuery):
 
 
 @callback_router.on_callback_query(CallbackFilter.filter("manage_links"))
-async def manage_links(client: Client, query: CallbackQuery):
+async def manage_links(client: Client, query: CallbackQuery, state: State):  # noqa: E501
     await query.message.edit_text(
         text=TEXT["choose_action"],
         reply_markup=await InlineKeyboardMenus.manage_links()
     )
+    await state.finish()
 
 
-@callback_router.on_callback_query(CallbackFilter.filter("public_links"))
-async def manage_public_links(client: Client, query: CallbackQuery):
+@callback_router.on_callback_query(CallbackFilter.filter("add_link"))
+async def add_link(client: Client, query: CallbackQuery, state: State):
     await query.message.edit_text(
-        text=TEXT["choose_action"],
-        reply_markup=await InlineKeyboardMenus.manage_public_links()
+        text=TEXT["add_link"],
+        reply_markup=await InlineKeyboardMenus.back("manage_links")
     )
+    await state.set_state(ActionStates.add_chat)
 
 
-@callback_router.on_callback_query(CallbackFilter.filter("private_links"))
-async def manage_private_links(client: Client, query: CallbackQuery):
-    await query.message.edit_text(
-        text=TEXT["choose_action"],
-        reply_markup=await InlineKeyboardMenus.manage_private_links()
-    )
-
-
-@callback_router.on_callback_query(CallbackFilter.filter("public_links_list"))
-async def public_links_list(client: Client, query: CallbackQuery):
+@callback_router.on_callback_query(CallbackFilter.filter("links_list"))
+async def links_list(client: Client, query: CallbackQuery):
     links = await DB.get_many(
-        table_cls=PublicChats
+        table_cls=Chats
     )
 
     await query.message.edit_text(
         text=TEXT["links_list" if links else "links_not_found"],
-        reply_markup=await InlineKeyboardMenus.public_links_list()
+        reply_markup=await InlineKeyboardMenus.links_list()
     )
 
 
-@callback_router.on_callback_query(CallbackFilter.filter("private_links_list"))
-async def private_links_list(client: Client, query: CallbackQuery):
-    links = await DB.get_many(
-        table_cls=PrivateChats
+@callback_router.on_callback_query(ChatData.filter())
+async def manage_link(client: Client, query: CallbackQuery):
+    callback_data = ChatData.unpack(query.data)
+
+    chat: Optional[Chat] = await DB.get(
+        table_cls=Chats,
+        sql_args=[
+            "link"
+        ],
+        sql_values=[
+            callback_data.link
+        ]
     )
 
     await query.message.edit_text(
-        text=TEXT["links_list" if links else "links_not_found"],
-        reply_markup=await InlineKeyboardMenus.private_links_list()
+        text=TEXT["choose_action" if chat else "link_not_found"],
+        reply_markup=await InlineKeyboardMenus.manage_link(
+            link=callback_data.link
+        )
+    )
+
+
+@callback_router.on_callback_query(ChatRemove.filter())
+async def remove_link(client: Client, query: CallbackQuery):
+    callback_data = ChatRemove.unpack(query.data)
+
+    await DB.remove(
+        table_cls=Chats,
+        sql_args=[
+            "link"
+        ],
+        sql_values=[
+            callback_data.link
+        ]
+    )
+
+    await query.message.edit_text(
+        text=TEXT["link_removed"],
+        reply_markup=await InlineKeyboardMenus.back(
+            data="manage_links"
+        )
+    )
+
+
+@callback_router.on_callback_query(CallbackFilter.filter("manage_sessions"))
+async def manage_sessions(client: Client, query: CallbackQuery):
+    await query.message.edit_text(
+        text=TEXT["choose_action"],
+        reply_markup=await InlineKeyboardMenus.manage_sessions()
+    )
+
+
+@callback_router.on_callback_query(CallbackFilter.filter("add_session"))
+async def add_session(client: Client, query: CallbackQuery, state: State):
+    await query.message.edit_text(
+        text=TEXT["add_session"],
+        reply_markup=await InlineKeyboardMenus.back("manage_sessions")
+    )
+    await state.set_state(ActionStates.add_session)
+
+
+@callback_router.on_callback_query(CallbackFilter.filter("sessions_list"))
+async def sessions_list(client: Client, query: CallbackQuery):
+    sessions = [session for session in Path("./sessions").glob("*.session")]
+
+    await query.message.edit_text(
+        text=TEXT["sessions_list" if sessions else "sessions_not_found"],
+        reply_markup=await InlineKeyboardMenus.sessions_list()
+    )
+
+
+@callback_router.on_callback_query(SessionData.filter())
+async def manage_session(client: Client, query: CallbackQuery):
+    callback_data = SessionData.unpack(query.data)
+    session = Path(callback_data.name)
+
+    await query.message.edit_text(
+        text=TEXT["choose_action" if session.exists() else "session_not_found"],
+        reply_markup=await InlineKeyboardMenus.manage_link(
+            link=callback_data.link
+        )
     )

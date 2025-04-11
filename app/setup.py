@@ -12,9 +12,8 @@ from app.bot.handlers.callback_handler import callback_router
 from app.settings.configparse import Settings
 from app.db.db_requests import DB
 from app.db.models import (
-    Keyword, Keywords,
-    PublicChat, PublicChats,
-    PrivateChat, PrivateChats
+    Keywords, Keyword,
+    Chats, Chat
 )
 
 
@@ -64,23 +63,11 @@ async def setup():
     )
 
     await DB.create_table(
-        table_cls=PublicChats,
+        table_cls=Chats,
         columns="""
-            id INT PRIMARY KEY NOT NULL,
-            link TEXT NOT NULL,
-            status TEXT DEFAULT('ChatMemberStatus.LEFT')
+            link TEXT PRIMARY KEY NOT NULL
         """,
-        table_cls_row=PublicChat
-    )
-
-    await DB.create_table(
-        table_cls=PrivateChats,
-        columns="""
-            id INT PRIMARY KEY NOT NULL,
-            link TEXT NOT NULL,
-            status TEXT DEFAULT('ChatMemberStatus.LEFT')
-        """,
-        table_cls_row=PrivateChat
+        table_cls_row=Chat
     )
 
 
