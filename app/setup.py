@@ -67,6 +67,7 @@ async def setup():
         table_cls=PublicChats,
         columns="""
             id INT PRIMARY KEY NOT NULL,
+            link TEXT NOT NULL,
             status TEXT DEFAULT('ChatMemberStatus.LEFT')
         """,
         table_cls_row=PublicChat
@@ -76,6 +77,7 @@ async def setup():
         table_cls=PrivateChats,
         columns="""
             id INT PRIMARY KEY NOT NULL,
+            link TEXT NOT NULL,
             status TEXT DEFAULT('ChatMemberStatus.LEFT')
         """,
         table_cls_row=PrivateChat

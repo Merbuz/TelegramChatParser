@@ -18,6 +18,7 @@ class Keywords:
 @define
 class PublicChat:
     id: int
+    link: str
     status: str
 
 
@@ -29,6 +30,7 @@ class PublicChats:
 @define
 class PrivateChat:
     id: int
+    link: str
     status: str
 
 

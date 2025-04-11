@@ -37,11 +37,13 @@ async def add_keyword(client: Client, message: Message, state: State):
             table_cls=Keywords,
             sql_args=[
                 "word",
-                "owner_id"
+                "owner_id",
+                "enabled"
             ],
             sql_values=[
                 message.text,
-                message.from_user.id
+                message.from_user.id,
+                True
             ]
         )
 

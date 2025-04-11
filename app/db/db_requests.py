@@ -244,9 +244,9 @@ class DB:
         Args:
             table_cls (Any): Table class
             need_to_update_values (List[str]): Attributes that need to be updated
+            sql_values (List[Any]): Values that will replace the original ones
             where_sql_arg (str): The name of the attribute to find the row by
             sql_arg (Any): The attribute for which you need to find a row
-            sql_values (List[Any]): Values that will replace the original ones
         """
 
         if table_cls.__name__ in cls.tables:
