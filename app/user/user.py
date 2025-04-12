@@ -1,23 +1,55 @@
 from __future__ import annotations
 
+import os
+import logging
 from typing import (
     TYPE_CHECKING,
+    Optional,
+    Callable,
+    TypeVar,
     Any
 )
 
+from dotenv import load_dotenv
 from pyrogram_patch import patch
 from pyrogram.client import Client
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from pyrogram_patch.router import Router
     from pyrogram_patch.fsm.base_storage import BaseStorage
 
 
+T = TypeVar("T", bound=Callable)
+
+
 class User(Client):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__(system_version="4.16.30-vxCUSTOM", *args, **kwargs)
 
         self.patched = patch(self)
+
+    @classmethod
+    def from_env(cls, *args, **kwargs) -> Self:
+        """Takes the data necessary for the user from the .env file"""
+
+        load_dotenv()
+
+        API_ID = os.getenv("API_ID")
+        API_HASH = os.getenv("API_HASH")
+
+        if not API_ID or not API_ID.isdigit():
+            raise Exception("API_ID in .env can't be empty or string")
+
+        elif not API_HASH:
+            raise Exception("API_HASH in .env can't be empty")
+
+        return cls(
+            *args,
+            **kwargs,
+            api_id=API_ID,
+            api_hash=API_HASH
+        )
 
     def include_middleware(self, middleware: Any) -> None:
         self.patched.include_middleware(middleware)
@@ -34,3 +66,33 @@ class User(Client):
     def include_routers(self, *routers: Router) -> None:
         for router in routers:
             self.include_router(router)
+
+    async def is_valid(self) -> Optional[bool]:
+        try:
+            logging.info("Connecting...")
+
+            await self.connect()
+
+            logging.info("Getting me...")
+
+            await self.get_me()
+
+        except Exception:
+            try:
+                logging.info("Disconnecting..")
+
+                await self.disconnect()
+
+            except Exception:
+                logging.warning("Already disconnected")
+
+                await self.storage.close()
+
+                return False
+
+        else:
+            logging.info("Disconnecting..")
+
+            await self.disconnect()
+
+            return True

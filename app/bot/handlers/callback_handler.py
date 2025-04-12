@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import (
     TYPE_CHECKING,
-    Optional
+    Optional,
+    List
 )
 from pathlib import Path
 
@@ -24,8 +25,10 @@ from app.bot.callback_query.callback_data import (
     KeywordRemove,
     ChatData,
     ChatRemove,
-    SessionData
+    SessionData,
+    SessionRemove
 )
+from app.parser.botnet import Parser
 
 if TYPE_CHECKING:
     from pyrogram.client import Client
@@ -54,16 +57,27 @@ async def manage_keywords(client: Client, query: CallbackQuery, state: State):
 
 @callback_router.on_callback_query(CallbackFilter.filter("add_keyword"))
 async def add_keyword(client: Client, query: CallbackQuery, state: State):
-    await query.message.edit_text(
-        text=TEXT["add_keyword"],
-        reply_markup=await InlineKeyboardMenus.back("manage_keywords")
-    )
-    await state.set_state(ActionStates.add_keyword)
+    parser = Parser()
+
+    if not parser.parsing:
+        await query.message.edit_text(
+            text=TEXT["add_keyword"],
+            reply_markup=await InlineKeyboardMenus.back("manage_keywords")
+        )
+        await state.set_state(ActionStates.add_keyword)
+
+    else:
+        await query.message.edit_text(
+            text=TEXT["disable_parsing"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_keywords"
+            )
+        )
 
 
 @callback_router.on_callback_query(CallbackFilter.filter("keywords_list"))
 async def keywords_list(client: Client, query: CallbackQuery):
-    keywords = await DB.get_many(
+    keywords: Optional[List[Keyword]] = await DB.get_many(
         table_cls=Keywords,
         sql_args=[
             "owner_id"
@@ -145,23 +159,33 @@ async def parse_keyword(client: Client, query: CallbackQuery):
 @callback_router.on_callback_query(KeywordRemove.filter())
 async def remove_keyword(client: Client, query: CallbackQuery):
     callback_data = KeywordRemove.unpack(query.data)
+    parser = Parser()
 
-    await DB.remove(
-        table_cls=Keywords,
-        sql_args=[
-            "word"
-        ],
-        sql_values=[
-            callback_data.word
-        ]
-    )
-
-    await query.message.edit_text(
-        text=TEXT["keyword_removed"],
-        reply_markup=await InlineKeyboardMenus.back(
-            data="manage_keywords"
+    if not parser.parsing:
+        await DB.remove(
+            table_cls=Keywords,
+            sql_args=[
+                "word"
+            ],
+            sql_values=[
+                callback_data.word
+            ]
         )
-    )
+
+        await query.message.edit_text(
+            text=TEXT["keyword_removed"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_keywords"
+            )
+        )
+
+    else:
+        await query.message.edit_text(
+            text=TEXT["disable_parsing"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_keywords"
+            )
+        )
 
 
 @callback_router.on_callback_query(CallbackFilter.filter("manage_links"))
@@ -175,16 +199,27 @@ async def manage_links(client: Client, query: CallbackQuery, state: State):  # n
 
 @callback_router.on_callback_query(CallbackFilter.filter("add_link"))
 async def add_link(client: Client, query: CallbackQuery, state: State):
-    await query.message.edit_text(
-        text=TEXT["add_link"],
-        reply_markup=await InlineKeyboardMenus.back("manage_links")
-    )
-    await state.set_state(ActionStates.add_chat)
+    parser = Parser()
+
+    if not parser.parsing:
+        await query.message.edit_text(
+            text=TEXT["add_link"],
+            reply_markup=await InlineKeyboardMenus.back("manage_links")
+        )
+        await state.set_state(ActionStates.add_chat)
+
+    else:
+        await query.message.edit_text(
+            text=TEXT["disable_parsing"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_links"
+            )
+        )
 
 
 @callback_router.on_callback_query(CallbackFilter.filter("links_list"))
 async def links_list(client: Client, query: CallbackQuery):
-    links = await DB.get_many(
+    links: Optional[List[Chat]] = await DB.get_many(
         table_cls=Chats
     )
 
@@ -219,23 +254,33 @@ async def manage_link(client: Client, query: CallbackQuery):
 @callback_router.on_callback_query(ChatRemove.filter())
 async def remove_link(client: Client, query: CallbackQuery):
     callback_data = ChatRemove.unpack(query.data)
+    parser = Parser()
 
-    await DB.remove(
-        table_cls=Chats,
-        sql_args=[
-            "link"
-        ],
-        sql_values=[
-            callback_data.link
-        ]
-    )
-
-    await query.message.edit_text(
-        text=TEXT["link_removed"],
-        reply_markup=await InlineKeyboardMenus.back(
-            data="manage_links"
+    if not parser.parsing:
+        await DB.remove(
+            table_cls=Chats,
+            sql_args=[
+                "link"
+            ],
+            sql_values=[
+                callback_data.link
+            ]
         )
-    )
+
+        await query.message.edit_text(
+            text=TEXT["link_removed"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_links"
+            )
+        )
+
+    else:
+        await query.message.edit_text(
+            text=TEXT["disable_parsing"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_links"
+            )
+        )
 
 
 @callback_router.on_callback_query(CallbackFilter.filter("manage_sessions"))
@@ -248,11 +293,22 @@ async def manage_sessions(client: Client, query: CallbackQuery):
 
 @callback_router.on_callback_query(CallbackFilter.filter("add_session"))
 async def add_session(client: Client, query: CallbackQuery, state: State):
-    await query.message.edit_text(
-        text=TEXT["add_session"],
-        reply_markup=await InlineKeyboardMenus.back("manage_sessions")
-    )
-    await state.set_state(ActionStates.add_session)
+    parser = Parser()
+
+    if not parser.parsing:
+        await query.message.edit_text(
+            text=TEXT["add_session"],
+            reply_markup=await InlineKeyboardMenus.back("manage_sessions")
+        )
+        await state.set_state(ActionStates.add_session)
+
+    else:
+        await query.message.edit_text(
+            text=TEXT["disable_parsing"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_sessions"
+            )
+        )
 
 
 @callback_router.on_callback_query(CallbackFilter.filter("sessions_list"))
@@ -268,11 +324,61 @@ async def sessions_list(client: Client, query: CallbackQuery):
 @callback_router.on_callback_query(SessionData.filter())
 async def manage_session(client: Client, query: CallbackQuery):
     callback_data = SessionData.unpack(query.data)
-    session = Path(callback_data.name)
+    session = Path(f"./sessions/{callback_data.name}")
 
     await query.message.edit_text(
-        text=TEXT["choose_action" if session.exists() else "session_not_found"],
-        reply_markup=await InlineKeyboardMenus.manage_link(
-            link=callback_data.link
+        text=TEXT["choose_action" if session.exists() else "session_not_found"],  # noqa: E501
+        reply_markup=await InlineKeyboardMenus.manage_session(
+            name=callback_data.name
         )
+    )
+
+
+@callback_router.on_callback_query(SessionRemove.filter())
+async def remove_session(client: Client, query: CallbackQuery):
+    callback_data = SessionRemove.unpack(query.data)
+    session = Path(f"./sessions/{callback_data.name}")
+    parser = Parser()
+
+    if not parser.parsing:
+        if session.exists():
+            session.unlink()
+
+        await query.message.edit_text(
+            text=TEXT["session_removed"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_sessions"
+            )
+        )
+
+    else:
+        await query.message.edit_text(
+            text=TEXT["disable_parsing"],
+            reply_markup=await InlineKeyboardMenus.back(
+                data="manage_sessions"
+            )
+        )
+
+
+@callback_router.on_callback_query(CallbackFilter.filter("manage_parser"))
+async def manage_parser(client: Client, query: CallbackQuery):
+    await query.message.edit_text(
+        text=TEXT["choose_action"],
+        reply_markup=await InlineKeyboardMenus.manage_parser()
+    )
+
+
+@callback_router.on_callback_query(CallbackFilter.filter("parser_parsing"))
+async def parser_parsing(client: Client, query: CallbackQuery):
+    parser = Parser()
+
+    if parser.parsing:
+        await parser.stop()
+
+    else:
+        await parser.run()
+
+    await query.message.edit_text(
+        text=TEXT["choose_action"],
+        reply_markup=await InlineKeyboardMenus.manage_parser()
     )

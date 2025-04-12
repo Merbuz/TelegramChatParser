@@ -32,31 +32,8 @@ async def message_handler(client: Client, message: Message):
     chats: Optional[List[Chat]] = await DB.get_many(
         table_cls=Chats
     )
-    link = message.chat.invite_link.split("/")[-1]
-
-    if keywords and chats:
-        for keyword, chat in zip(keywords, chats):
-            if link in chat.link and keyword.word in message.text:
-                await client.send_message(
-                    chat_id=keyword.owner_id,
-                    text=TEXT["message_found"].format(
-                        keyword=keyword.word,
-                        link=message.link
-                    )
-                )
-
-                logging.info(f"Message: {message.link} parsed by keyword: {keyword.word}")  # noqa: E501
-
-
-@new_message_router.on_edited_message()
-async def message_edited_handler(client: Client, message: Message):
-    keywords: Optional[List[Keyword]] = await DB.get_many(
-        table_cls=Keywords
-    )
-    chats: Optional[List[Chat]] = await DB.get_many(
-        table_cls=Chats
-    )
-    link = message.chat.invite_link.split("/")[-1]
+    invite_link = message.chat.invite_link
+    link = invite_link.split("/")[-1] if invite_link else message.chat.username
 
     if keywords and chats:
         for keyword, chat in zip(keywords, chats):

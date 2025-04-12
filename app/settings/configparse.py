@@ -1,15 +1,10 @@
 import configparser
 from typing import List
 
-
-class Singleton:
-    def __new__(cls):
-        if not hasattr(cls, "instance"):
-            cls.instance = super(Singleton, cls).__new__(cls)
-        return cls.instance
+from simple_singleton import SingletonArgs
 
 
-class Settings(Singleton):
+class Settings(metaclass=SingletonArgs):
     def __init__(self):
         self.parser = configparser.ConfigParser()
 

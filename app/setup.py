@@ -15,6 +15,7 @@ from app.db.models import (
     Keywords, Keyword,
     Chats, Chat
 )
+from app.bot.middlewares.security_middleware import SecurityMiddleware
 
 
 bot = Bot.from_env(
@@ -52,6 +53,10 @@ async def setup():
         message_router
     )
 
+    bot.include_middleware(
+        SecurityMiddleware()
+    )
+
     await DB.create_table(
         table_cls=Keywords,
         columns="""
@@ -73,6 +78,6 @@ async def setup():
 
 def main():
     loop = asyncio.get_event_loop()
-
     loop.run_until_complete(setup())
+
     bot.run()

@@ -1,4 +1,3 @@
-import os
 import math
 from typing import (
     Optional,
@@ -23,6 +22,7 @@ from app.bot.callback_query.callback_data import (
     SessionData,
     SessionRemove
 )
+from app.parser.botnet import Parser
 
 
 class InlineKeyboardMenus:
@@ -190,17 +190,31 @@ class InlineKeyboardMenus:
 
     @staticmethod
     async def manage_link(link: str) -> InlineKeyboardMarkup:
-        return InlineKeyboardMenus._inline_keyboard_builder(
-            InlineKeyboardButton(
-                text=BUTTON["remove_link"],
-                callback_data=ChatRemove(
-                    link=link
-                ).pack()
-            ),
-            InlineKeyboardMenus._back(
-                data="links_list"
-            )
+        chat_link: Optional[Chat] = await DB.get(
+            table_cls=Chats,
+            sql_args=[
+                "link"
+            ],
+            sql_values=[
+                link
+            ]
         )
+
+        if chat_link:
+            return InlineKeyboardMenus._inline_keyboard_builder(
+                InlineKeyboardButton(
+                    text=BUTTON["remove_link"],
+                    callback_data=ChatRemove(
+                        link=chat_link.link
+                    ).pack()
+                ),
+                InlineKeyboardMenus._back(
+                    data="links_list"
+                )
+            )
+
+        else:
+            return await InlineKeyboardMenus.back("links_list")
 
     @staticmethod
     async def manage_sessions() -> InlineKeyboardMarkup:
@@ -238,14 +252,32 @@ class InlineKeyboardMenus:
 
     @staticmethod
     async def manage_session(name: str) -> InlineKeyboardMarkup:
+        session = Path(f"./sessions/{name}")
+
+        if session.exists():
+            return InlineKeyboardMenus._inline_keyboard_builder(
+                InlineKeyboardButton(
+                    text=BUTTON["remove_session"],
+                    callback_data=SessionRemove(
+                        name=name
+                    ).pack()
+                ),
+                InlineKeyboardMenus._back(
+                    data="sessions_list"
+                )
+            )
+
+        else:
+            return await InlineKeyboardMenus.back("sessions_list")
+
+    @staticmethod
+    async def manage_parser() -> InlineKeyboardMarkup:
+        parser = Parser()
+
         return InlineKeyboardMenus._inline_keyboard_builder(
             InlineKeyboardButton(
-                text=BUTTON["remove_session"],
-                callback_data=SessionRemove(
-                    name=name
-                ).pack()
+                text=BUTTON["parsing"] + BUTTON["enabled" if parser.parsing else "disabled"],  # noqa: E501
+                callback_data="parser_parsing"
             ),
-            InlineKeyboardMenus._back(
-                data="links_list"
-            )
+            InlineKeyboardMenus._back("start")
         )
