@@ -32,18 +32,41 @@ async def message_handler(client: Client, message: Message):
     chats: Optional[List[Chat]] = await DB.get_many(
         table_cls=Chats
     )
-    invite_link = message.chat.invite_link
-    link = invite_link.split("/")[-1] if invite_link else message.chat.username
 
-    if keywords and chats:
-        for keyword, chat in zip(keywords, chats):
-            if link in chat.link and keyword.word in message.text:
-                await client.send_message(
-                    chat_id=keyword.owner_id,
-                    text=TEXT["message_found"].format(
-                        keyword=keyword.word,
-                        link=message.link
-                    )
+    if chats and keywords:
+        db_chats = []
+        enabled_keywords = [keyword for keyword in keywords if keyword.enabled]
+
+        for chat in chats:
+            try:
+                db_chats.append(
+                    (await client.get_chat(f"https://t.me/{chat.link}")).id
                 )
 
-                logging.info(f"Message: {message.link} parsed by keyword: {keyword.word}")  # noqa: E501
+            except Exception:
+                logging.error("Can`t parse link")
+
+        if message.chat.id in db_chats:
+            for keyword in enabled_keywords:
+                if keyword.word in message.text:
+                    if message.link:
+                        await client.send_message(
+                            chat_id=keyword.owner_id,
+                            text=TEXT["message_found_public"].format(
+                                keyword=keyword.word,
+                                link=message.link
+                            )
+                        )
+
+                    else:
+                        await client.send_message(
+                            chat_id=keyword.owner_id,
+                            text=TEXT["message_found_private"].format(
+                                keyword=keyword.word,
+                                chat=message.chat.title,
+                                author=message.from_user.mention,
+                                text=message.text
+                            )
+                        )
+
+                    logging.info(f"Message: {message.link} parsed by keyword: {keyword.word}")  # noqa: E501

@@ -12,6 +12,7 @@ from typing import (
 
 from dotenv import load_dotenv
 from pyrogram_patch import patch
+from pyrogram.raw import functions
 from pyrogram.client import Client
 from typing_extensions import Self
 
@@ -96,3 +97,25 @@ class User(Client):
             await self.disconnect()
 
             return True
+
+    async def user_start(self) -> Self:
+        """Runs user instead of \"start\" function"""
+
+        await self.connect()
+
+        try:
+            if self.takeout and not await self.storage.is_bot():
+                self.takeout_id = (await self.invoke(functions.account.InitTakeoutSession())).id  # noqa: E501  # type: ignore
+                logging.info("Takeout session %s initiated", self.takeout_id)
+
+            await self.invoke(functions.updates.GetState())  # type: ignore
+
+        except (Exception, KeyboardInterrupt):
+            await self.disconnect()
+            raise
+
+        else:
+            self.me = await self.get_me()
+            await self.initialize()
+
+            return self

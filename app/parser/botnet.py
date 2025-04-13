@@ -60,7 +60,7 @@ class Parser(metaclass=ThreadSingletonArgs):
         self.parsing = True
 
         for user in self.users:
-            await user.connect()
+            await user.user_start()
 
         await self.join_chats()
 
@@ -71,7 +71,7 @@ class Parser(metaclass=ThreadSingletonArgs):
 
         for user in self.users:
             try:
-                await user.disconnect()
+                await user.stop()
 
                 self.update()
 
