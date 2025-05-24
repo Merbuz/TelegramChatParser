@@ -1,4 +1,4 @@
-# Telegran Chat Parser
+# Telegram Chat Parser
 
 This project was made for free for the portfolio.
 
